@@ -49,6 +49,7 @@ export default {
       title: 'Thumbnail',
       type: 'image',
       options: { hotspot: true },
+      validation: Rule => Rule.required(),
       description: 'Upload a thumbnail image for the video'
     },
 
@@ -64,7 +65,7 @@ export default {
   preview: {
     select: {
       title: 'title',
-      media: 'video.asset'   // ✅ Shows Mux thumbnail preview
+      media: 'thumbnail'
     }
   }
 }

@@ -67,7 +67,7 @@ const Header = () => {
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50 mb-10">
-      <div className="container mx-auto px-2 py-2 sm:py-2 flex items-center justify-between">
+      <div className="container mx-auto px-2 py-1 sm:py-1 flex items-center justify-between">
         <Logo />
         <div className="flex items-center gap-2 sm:gap-3">
           <DropdownMenu>
@@ -112,7 +112,7 @@ const Header = () => {
         </div>
       </div>
 
-      <nav className="flex container mb-2 mx-auto items-center sm:justify-start space-x-1 md:space-x-6 overflow-x-auto scrollbar-hide mt-2 sm:mt-4 p-2 md:pb-0">
+      <nav className="flex container mb-2 mx-auto items-center sm:justify-start space-x-1 md:space-x-6 overflow-x-auto scrollbar-hide mt-2 sm:mt-2 p-2 md:pb-0">
         <NavItems />
       </nav>
       <NewWebsiteBanner />

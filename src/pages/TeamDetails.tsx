@@ -186,36 +186,36 @@ const TeamDetails: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <Link to="/teams">
-          <Button variant="outline" className="mb-4 flex items-center">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Teams
-          </Button>
-        </Link>
+
 
         {/* Team Header */}
         <Card className="bg-elite-card border-border/50 mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between gap-6">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6">
               {/* Left side - Team logo, name, form and wins */}
-              <div className="flex items-center gap-6 flex-1">
+              <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-1 w-full md:w-auto">
                 <img
                   src={team.logo_url ? urlFor(team.logo_url).url() : getTeamLogo(team.name)}
                   alt={team.name}
-                  className="w-20 h-20 object-contain"
+                  className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain flex-shrink-0"
                 />
-                <div className="flex-1">
-                  <h1 className="text-3xl font-bold mb-3">{team.name}</h1>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3 truncate">
+                    {team.name}
+                  </h1>
                   
                   {/* Form and Wins */}
-                  <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 md:gap-4 flex-wrap">
                     {stats?.form && (
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-muted-foreground">Form:</span>
+                        <span className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
+                          Form:
+                        </span>
                         <div className="flex items-center gap-1">
                           {stats.form.split('').map((r, i) => (
                             <span 
                               key={i} 
-                              className={`w-7 h-7 flex items-center justify-center rounded-full text-white text-xs font-bold ${
+                              className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 flex items-center justify-center rounded-full text-white text-[10px] sm:text-xs font-bold ${
                                 r === 'W' ? 'bg-green-600' : r === 'D' ? 'bg-yellow-500' : 'bg-red-600'
                               }`}
                             >
@@ -227,11 +227,11 @@ const TeamDetails: React.FC = () => {
                     )}
                     
                     {stats && (
-                      <div className="flex items-center gap-3">
-                        <Badge variant="secondary" className="text-sm font-semibold">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                        <Badge variant="secondary" className="text-xs sm:text-sm font-semibold whitespace-nowrap">
                           Wins: {stats.won}
                         </Badge>
-                        <Badge variant="outline" className="text-sm">
+                        <Badge variant="outline" className="text-xs sm:text-sm whitespace-nowrap">
                           P: {stats.played} | Pts: {stats.points}
                         </Badge>
                       </div>
@@ -242,22 +242,24 @@ const TeamDetails: React.FC = () => {
 
               {/* Right side - Manager/Coach Info */}
               {(team.managerName || team.managerPhoto) && (
-                <div className="flex flex-col items-center space-y-3 min-w-[120px]">
+                <div className="flex flex-col items-center sm:items-end md:items-center space-y-2 sm:space-y-3 w-full md:w-auto md:min-w-[120px] border-t md:border-t-0 pt-4 md:pt-0">
                   {team.managerPhoto ? (
                     <img
                       src={urlFor(team.managerPhoto).url()}
                       alt={team.managerName || "Manager"}
-                      className="w-24 h-24 rounded-full object-cover border-2 border-border shadow-md"
+                      className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-border shadow-md flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center border-2 border-border">
-                      <span className="text-2xl">👤</span>
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-muted flex items-center justify-center border-2 border-border flex-shrink-0">
+                      <span className="text-xl sm:text-2xl">👤</span>
                     </div>
                   )}
                   {team.managerName && (
-                    <div className="text-center">
-                      <p className="text-base font-semibold">{team.managerName}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                    <div className="text-center sm:text-right md:text-center">
+                      <p className="text-sm sm:text-base font-semibold break-words">
+                        {team.managerName}
+                      </p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                         {team.managerName ? "Head Coach" : "Manager"}
                       </p>
                     </div>

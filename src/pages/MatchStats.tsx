@@ -45,12 +45,18 @@ const MatchStats = () => {
 
             homeTeamStats{
               possession, shots, shotsOnTarget,
-              corners, fouls, 
+              corners, fouls, yellowCards, redCards,
+              offsides, passes, successfulPass,
+              freeKicks, crosses, interceptions,
+              tackles, saves
             },
 
             awayTeamStats{
               possession, shots, shotsOnTarget,
-              corners, fouls,
+              corners, fouls, yellowCards, redCards,
+              offsides, passes, successfulPass,
+              freeKicks, crosses, interceptions,
+              tackles, saves
             }
           }`,
           { matchId }
@@ -82,9 +88,6 @@ const MatchStats = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Match not found</h2>
-          <Link to="/fixtures">
-            <Button>Back to Fixtures</Button>
-          </Link>
         </div>
       </div>
     );
@@ -113,7 +116,46 @@ const MatchStats = () => {
             home: match.homeTeamStats.fouls,
             away: match.awayTeamStats.fouls,
           },
-          
+          yellowCards: {
+            home: match.homeTeamStats.yellowCards,
+            away: match.awayTeamStats.yellowCards,
+          },
+          redCards: {
+            home: match.homeTeamStats.redCards,
+            away: match.awayTeamStats.redCards,
+          },
+          offsides: {
+            home: match.homeTeamStats.offsides,
+            away: match.awayTeamStats.offsides,
+          },
+          passes: {
+            home: match.homeTeamStats.passes,
+            away: match.awayTeamStats.passes,
+          },
+          successfulPass: {
+            home: match.homeTeamStats.successfulPass,
+            away: match.awayTeamStats.successfulPass,
+          },
+          freeKicks: {
+            home: match.homeTeamStats.freeKicks,
+            away: match.awayTeamStats.freeKicks,
+          },
+          crosses: {
+            home: match.homeTeamStats.crosses,
+            away: match.awayTeamStats.crosses,
+          },
+          interceptions: {
+            home: match.homeTeamStats.interceptions,
+            away: match.awayTeamStats.interceptions,
+          },
+          tackles: {
+            home: match.homeTeamStats.tackles,
+            away: match.awayTeamStats.tackles,
+          },
+          saves: {
+            home: match.homeTeamStats.saves,
+            away: match.awayTeamStats.saves,
+          },
         }
       : {};
 
@@ -141,46 +183,76 @@ const MatchStats = () => {
             </div>
           </CardHeader>
 
-          <CardContent>
-            <div className="flex items-center justify-between">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-8">
               {/* Home Team */}
-              <div className="text-center flex-1">
-                <img
-                  src={
-                    match.homeTeam?.logo
-                      ? urlFor(match.homeTeam.logo).url()
-                      : getTeamLogo(match.homeTeam.name)
-                  }
-                  className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 object-contain"
-                />
-                <p className="font-semibold">{match.homeTeam.name}</p>
+              <div className="flex flex-col items-center flex-1 w-full md:w-auto">
+                <div className="flex flex-col items-center gap-3">
+                  <img
+                    src={
+                      match.homeTeam?.logo
+                        ? urlFor(match.homeTeam.logo).url()
+                        : getTeamLogo(match.homeTeam.name)
+                    }
+                    alt={match.homeTeam.name}
+                    className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain"
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      img.src = getTeamLogo(match.homeTeam.name);
+                    }}
+                  />
+                  <p className="font-bold text-base sm:text-lg md:text-xl text-center">
+                    {match.homeTeam.name}
+                  </p>
+                </div>
               </div>
 
               {/* Score */}
-              <div className="text-center px-8">
-                <div className="text-4xl font-bold">
+              <div className="text-center px-4 md:px-8 flex-shrink-0">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2">
                   <span className="text-primary">{match.homeScore ?? 0}</span>
-                  <span className="text-muted-foreground mx-4">-</span>
+                  <span className="text-muted-foreground mx-2 sm:mx-4">-</span>
                   <span className="text-primary">{match.awayScore ?? 0}</span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {match.matchDate
-                    ? new Date(match.matchDate).toLocaleDateString()
-                    : "TBD"}
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  {match.matchDate ? (
+                    <>
+                      <span className="block">
+                        {new Date(match.matchDate).toLocaleDateString()}
+                      </span>
+                      <span className="block mt-1">
+                        {new Date(match.matchDate).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </>
+                  ) : (
+                    "TBD"
+                  )}
                 </p>
               </div>
 
               {/* Away Team */}
-              <div className="text-center flex-1">
-                <img
-                  src={
-                    match.awayTeam?.logo
-                      ? urlFor(match.awayTeam.logo).url()
-                      : getTeamLogo(match.awayTeam.name)
-                  }
-                  className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 object-contain"
-                />
-                <p className="font-semibold">{match.awayTeam.name}</p>
+              <div className="flex flex-col items-center flex-1 w-full md:w-auto">
+                <div className="flex flex-col items-center gap-3">
+                  <img
+                    src={
+                      match.awayTeam?.logo
+                        ? urlFor(match.awayTeam.logo).url()
+                        : getTeamLogo(match.awayTeam.name)
+                    }
+                    alt={match.awayTeam.name}
+                    className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain"
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      img.src = getTeamLogo(match.awayTeam.name);
+                    }}
+                  />
+                  <p className="font-bold text-base sm:text-lg md:text-xl text-center">
+                    {match.awayTeam.name}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -249,28 +321,67 @@ const MatchStats = () => {
 
             <CardContent>
               <div className="space-y-4">
-                {Object.entries(stats).map(([stat, values]: any) => (
-                  <div key={stat} className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>{values.home}</span>
-                      <span className="capitalize font-medium">
-                        {stat.replace(/([A-Z])/g, " $1").trim()}
-                      </span>
-                      <span>{values.away}</span>
-                    </div>
+                {Object.entries(stats).map(([stat, values]: any) => {
+                  // Skip if values are null/undefined
+                  if (values.home == null && values.away == null) return null;
+                  
+                  const homeValue = values.home ?? 0;
+                  const awayValue = values.away ?? 0;
+                  const total = homeValue + awayValue;
+                  
+                  // Format stat name
+                  const statName = stat
+                    .replace(/([A-Z])/g, " $1")
+                    .trim()
+                    .replace(/^./, (str) => str.toUpperCase());
+                  
+                  // For percentage stats like possession, show percentage sign
+                  const isPercentage = stat === 'possession';
+                  const homeDisplay = isPercentage 
+                    ? `${homeValue}%` 
+                    : homeValue;
+                  const awayDisplay = isPercentage 
+                    ? `${awayValue}%` 
+                    : awayValue;
+                  
+                  // Calculate percentage for progress bar (avoid division by zero)
+                  const percentage = total > 0 ? (homeValue / total) * 100 : 50;
 
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-l-full"
-                        style={{
-                          width: `${
-                            (values.home / (values.home + values.away)) * 100
-                          }%`,
-                        }}
-                      ></div>
+                  return (
+                    <div key={stat} className="space-y-2">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="font-medium w-16 text-right">
+                          {homeDisplay}
+                        </span>
+                        <span className="capitalize font-medium text-center flex-1 px-2">
+                          {statName}
+                        </span>
+                        <span className="font-medium w-16 text-left">
+                          {awayDisplay}
+                        </span>
+                      </div>
+
+                      {total > 0 && (
+                        <div className="w-full bg-muted rounded-full h-2 relative">
+                          <div
+                            className="bg-primary h-2 rounded-l-full transition-all"
+                            style={{
+                              width: `${percentage}%`,
+                            }}
+                          ></div>
+                          {percentage > 0 && percentage < 100 && (
+                            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border"></div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+                {Object.keys(stats).length === 0 && (
+                  <p className="text-center text-sm text-muted-foreground py-4">
+                    No statistics available
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -377,25 +488,44 @@ const MatchStats = () => {
           </CardHeader>
 
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {match.round && (
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Round</p>
+                  <p className="font-semibold">{match.round}</p>
+                </div>
+              )}
+              
               <div className="text-center">
-                <p className="text-sm text-muted-foreground">Venue</p>
-                <p className="font-semibold">{match.venue}</p>
+                <p className="text-sm text-muted-foreground mb-1">Venue</p>
+                <p className="font-semibold">{match.venue || "TBD"}</p>
               </div>
 
               <div className="text-center">
-                <p className="text-sm text-muted-foreground">Attendance</p>
+                <p className="text-sm text-muted-foreground mb-1">Attendance</p>
                 <p className="font-semibold">
                   {match.attendance?.toLocaleString() || "TBD"}
                 </p>
               </div>
 
               <div className="text-center">
-                <p className="text-sm text-muted-foreground">Date</p>
+                <p className="text-sm text-muted-foreground mb-1">Date & Time</p>
                 <p className="font-semibold">
-                  {match.matchDate
-                    ? new Date(match.matchDate).toLocaleDateString()
-                    : "TBD"}
+                  {match.matchDate ? (
+                    <>
+                      <span className="block">
+                        {new Date(match.matchDate).toLocaleDateString()}
+                      </span>
+                      <span className="block text-xs text-muted-foreground mt-1">
+                        {new Date(match.matchDate).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </>
+                  ) : (
+                    "TBD"
+                  )}
                 </p>
               </div>
             </div>

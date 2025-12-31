@@ -140,12 +140,7 @@ const NewsDetails = () => {
           <p className="text-muted-foreground mb-8">
             The article you're looking for doesn't exist or has been removed.
           </p>
-          <Link to="/news">
-            <Button size="lg" className="gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              Back to News
-            </Button>
-          </Link>
+          
         </div>
       </div>
     );

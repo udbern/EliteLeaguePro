@@ -66,29 +66,38 @@ const VideoHighlights = () => {
               match_date
             },
             video{
-              asset->{url}
+              asset->{
+                url,
+                _id,
+                mimeType
+              }
             },
             thumbnail,
             duration,
             published_at
           }`
         );
-        const formattedHighlights = data.map((item) => ({
-          id: item._id,
-          title:
-            item.title ||
-            `${item.fixture?.homeTeam?.name} vs ${item.fixture?.awayTeam?.name} Highlights`,
-          homeTeam: item.fixture?.homeTeam?.name || "Unknown",
-          awayTeam: item.fixture?.awayTeam?.name || "Unknown",
-          homeTeamLogo: item.fixture?.homeTeam?.logo ? urlFor(item.fixture.homeTeam.logo).width(100).height(100).url() : null,
-          awayTeamLogo: item.fixture?.awayTeam?.logo ? urlFor(item.fixture.awayTeam.logo).width(100).height(100).url() : null,
-          duration: item.duration || "N/A",
-          date: item.published_at || item.fixture?.match_date || new Date(),
-          thumbnail: item.thumbnail
+        const formattedHighlights = data.map((item) => {
+          // Use thumbnail field (required in schema)
+          const thumbnailUrl = item.thumbnail
             ? urlFor(item.thumbnail).width(800).height(450).url()
-            : "https://via.placeholder.com/800x450?text=No+Thumbnail",
-          video: item.video,
-        }));
+            : "https://via.placeholder.com/800x450?text=Video+Highlight";
+
+          return {
+            id: item._id,
+            title:
+              item.title ||
+              `${item.fixture?.homeTeam?.name} vs ${item.fixture?.awayTeam?.name} Highlights`,
+            homeTeam: item.fixture?.homeTeam?.name || "Unknown",
+            awayTeam: item.fixture?.awayTeam?.name || "Unknown",
+            homeTeamLogo: item.fixture?.homeTeam?.logo ? urlFor(item.fixture.homeTeam.logo).width(100).height(100).url() : null,
+            awayTeamLogo: item.fixture?.awayTeam?.logo ? urlFor(item.fixture.awayTeam.logo).width(100).height(100).url() : null,
+            duration: item.duration || "N/A",
+            date: item.published_at || item.fixture?.match_date || new Date(),
+            thumbnail: thumbnailUrl,
+            video: item.video,
+          };
+        });
 
         setHighlights(formattedHighlights);
       } catch (error) {
