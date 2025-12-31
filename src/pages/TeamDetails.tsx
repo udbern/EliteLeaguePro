@@ -25,7 +25,8 @@ type FixtureRow = {
   awayScore?: number | null;
   homeTeam?: { _id: string; name: string; logo?: string };
   awayTeam?: { _id: string; name: string; logo?: string };
-  goalScorers?: { playerName: string; team: string }[];
+  homeGoalScorers?: { playerName: string; goals: number; team?: { _id: string; name: string } }[];
+  awayGoalScorers?: { playerName: string; goals: number; team?: { _id: string; name: string } }[];
 };
 
 type GoalScorer = {
@@ -69,47 +70,50 @@ const TeamDetails: React.FC = () => {
             awayScore,
             homeTeam->{_id, name, logo},
             awayTeam->{_id, name, logo},
-            goalScorers[] { playerName, team }
+            homeGoalScorers[]{
+              playerName,
+              goals,
+              team->{_id, name}
+            },
+            awayGoalScorers[]{
+              playerName,
+              goals,
+              team->{_id, name}
+            }
           }`,
           { seasonId: selectedSeason._id, competitionId: selectedCompetition._id }
         );
 
-        const normalizedTeamName = teamName.toLowerCase().replace(/\s+/g, '-');
-        const foundTeamFixture = fixtures.find(f =>
-          f.homeTeam?.name.toLowerCase().replace(/\s+/g, '-') === normalizedTeamName ||
-          f.awayTeam?.name.toLowerCase().replace(/\s+/g, '-') === normalizedTeamName
-        );
-        if (!foundTeamFixture) {
-          setLoading(false);
-          return;
-        }
-
-        const teamId = foundTeamFixture.homeTeam?.name.toLowerCase().replace(/\s+/g, '-') === normalizedTeamName
-          ? foundTeamFixture.homeTeam!._id
-          : foundTeamFixture.awayTeam!._id;
-
-        // Fetch team document to get manager information
+        // Normalize team name for search (convert URL slug back to name format)
+        const normalizedTeamName = teamName.toLowerCase().replace(/-/g, ' ');
+        
+        // Fetch team document directly by name (case-insensitive search)
         const teamDoc = await client.fetch(
-          `*[_type == "team" && _id == $teamId][0]{
+          `*[_type == "team" && $seasonId in seasons[]._ref && (lower(name) match $teamName || lower(name) match $teamNameSlug)][0]{
             _id,
             name,
             logo,
             managerName,
             managerPhoto
           }`,
-          { teamId }
+          { 
+            seasonId: selectedSeason._id,
+            teamName: `*${normalizedTeamName}*`,
+            teamNameSlug: `*${teamName.replace(/-/g, ' ')}*`
+          }
         );
 
+        if (!teamDoc) {
+          setLoading(false);
+          return;
+        }
+
         const foundTeam: DBTeam = {
-          id: teamId,
-          name: teamDoc?.name || foundTeamFixture.homeTeam?.name.toLowerCase().replace(/\s+/g, '-') === normalizedTeamName
-            ? foundTeamFixture.homeTeam!.name
-            : foundTeamFixture.awayTeam!.name,
-          logo_url: teamDoc?.logo || foundTeamFixture.homeTeam?.name.toLowerCase().replace(/\s+/g, '-') === normalizedTeamName
-            ? foundTeamFixture.homeTeam!.logo
-            : foundTeamFixture.awayTeam?.logo,
-          managerName: teamDoc?.managerName,
-          managerPhoto: teamDoc?.managerPhoto
+          id: teamDoc._id,
+          name: teamDoc.name,
+          logo_url: teamDoc.logo,
+          managerName: teamDoc.managerName,
+          managerPhoto: teamDoc.managerPhoto
         };
         setTeam(foundTeam);
 
@@ -135,9 +139,12 @@ const TeamDetails: React.FC = () => {
           else if (teamScore < oppScore) { lost++; formArray.unshift('L'); }
           else { drawn++; formArray.unshift('D'); }
 
-          f.goalScorers?.forEach(gs => {
-            if (gs.team === foundTeam.name) {
-              scorersMap.set(gs.playerName, (scorersMap.get(gs.playerName) || 0) + 1);
+          // Process goal scorers from homeGoalScorers or awayGoalScorers
+          const teamScorers = isHome ? f.homeGoalScorers : f.awayGoalScorers;
+          teamScorers?.forEach((gs: any) => {
+            if (gs && gs.playerName) {
+              const goals = gs.goals || 1;
+              scorersMap.set(gs.playerName, (scorersMap.get(gs.playerName) || 0) + goals);
             }
           });
         });
@@ -187,100 +194,183 @@ const TeamDetails: React.FC = () => {
 
         {/* Team Header */}
         <Card className="bg-elite-card border-border/50 mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              {/* Left side - Team logo, name, stats and form */}
-              <div className="flex flex-col items-center space-y-4">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-6">
+              {/* Left side - Team logo, name, form and wins */}
+              <div className="flex items-center gap-6 flex-1">
                 <img
                   src={team.logo_url ? urlFor(team.logo_url).url() : getTeamLogo(team.name)}
                   alt={team.name}
-                  className="w-24 h-24 object-contain"
+                  className="w-20 h-20 object-contain"
                 />
-                <div className="text-center">
-                  <h1 className="text-3xl font-bold">{team.name}</h1>
-                  {stats && (
-                    <div className="flex items-center justify-center space-x-3 mt-2">
-                      <Badge variant="secondary">P: {stats.played}</Badge>
-                      <Badge variant="secondary">W: {stats.won}</Badge>
-                      <Badge variant="secondary">D: {stats.drawn}</Badge>
-                      <Badge variant="secondary">L: {stats.lost}</Badge>
-                      <Badge variant="secondary">Pts: {stats.points}</Badge>
-                    </div>
-                  )}
-                  {stats?.form && (
-                    <div className="flex items-center space-x-2 mt-2">
-                      <span className="text-sm text-muted-foreground">Form:</span>
-                      {stats.form.split('').map((r, i) => (
-                        <span key={i} className={`w-6 h-6 flex items-center justify-center rounded-full text-white text-xs font-bold ${r === 'W' ? 'bg-green-600' : r === 'D' ? 'bg-yellow-500' : 'bg-red-600'}`}>{r}</span>
-                      ))}
-                    </div>
-                  )}
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold mb-3">{team.name}</h1>
+                  
+                  {/* Form and Wins */}
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {stats?.form && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-muted-foreground">Form:</span>
+                        <div className="flex items-center gap-1">
+                          {stats.form.split('').map((r, i) => (
+                            <span 
+                              key={i} 
+                              className={`w-7 h-7 flex items-center justify-center rounded-full text-white text-xs font-bold ${
+                                r === 'W' ? 'bg-green-600' : r === 'D' ? 'bg-yellow-500' : 'bg-red-600'
+                              }`}
+                            >
+                              {r}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {stats && (
+                      <div className="flex items-center gap-3">
+                        <Badge variant="secondary" className="text-sm font-semibold">
+                          Wins: {stats.won}
+                        </Badge>
+                        <Badge variant="outline" className="text-sm">
+                          P: {stats.played} | Pts: {stats.points}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Right side - Manager Info */}
+              {/* Right side - Manager/Coach Info */}
               {(team.managerName || team.managerPhoto) && (
-                <div className="flex flex-col items-center space-y-2">
-                  {team.managerPhoto && (
+                <div className="flex flex-col items-center space-y-3 min-w-[120px]">
+                  {team.managerPhoto ? (
                     <img
                       src={urlFor(team.managerPhoto).url()}
                       alt={team.managerName || "Manager"}
-                      className="w-20 h-20 rounded-full object-cover border-2 border-border"
+                      className="w-24 h-24 rounded-full object-cover border-2 border-border shadow-md"
                     />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center border-2 border-border">
+                      <span className="text-2xl">👤</span>
+                    </div>
                   )}
                   {team.managerName && (
                     <div className="text-center">
-                      <p className="text-lg font-medium">{team.managerName}</p>
-                      <p className="text-sm text-muted-foreground">Head Coach</p>
+                      <p className="text-base font-semibold">{team.managerName}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {team.managerName ? "Head Coach" : "Manager"}
+                      </p>
                     </div>
                   )}
                 </div>
               )}
             </div>
-          </CardHeader>
+          </CardContent>
         </Card>
 
         {/* Fixtures and Top Scorers */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Upcoming */}
+          {/* Recent Results - Scores */}
           <Card className="bg-elite-card border-border/50">
             <CardHeader>
-              <CardTitle className="flex items-center"><Calendar className="w-5 h-5 mr-2"/>Upcoming Fixtures</CardTitle>
+              <CardTitle className="flex items-center">
+                <Activity className="w-5 h-5 mr-2" />
+                Recent Results
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              {upcomingFixtures.length === 0 ? <p className="text-sm text-muted-foreground">No upcoming fixtures</p> :
-                upcomingFixtures.map(f => (
-                  <div key={f.id} className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
-                    <div className="flex items-center space-x-2">
-                      <img src={f.homeTeam?.logo ? urlFor(f.homeTeam.logo).url() : getTeamLogo(f.homeTeam?.name || "")} className="w-6 h-6" />
-                      <span>{f.homeTeam?.name} vs {f.awayTeam?.name}</span>
-                      <img src={f.awayTeam?.logo ? urlFor(f.awayTeam.logo).url() : getTeamLogo(f.awayTeam?.name || "")} className="w-6 h-6" />
-                    </div>
-                    <div className="text-sm">{f.matchDate ? new Date(f.matchDate).toLocaleDateString() : 'TBD'}</div>
-                  </div>
-                ))
-              }
+            <CardContent className="space-y-3">
+              {recentResults.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No recent results</p>
+              ) : (
+                recentResults.map(f => {
+                  const isHome = f.homeTeam?._id === team.id;
+                  const teamScore = isHome ? (f.homeScore ?? 0) : (f.awayScore ?? 0);
+                  const oppScore = isHome ? (f.awayScore ?? 0) : (f.homeScore ?? 0);
+                  const opponent = isHome ? f.awayTeam : f.homeTeam;
+                  
+                  return (
+                    <Link key={f.id} to={`/match/${f.id}`}>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-3 flex-1">
+                          <img
+                            src={opponent?.logo ? urlFor(opponent.logo).url() : getTeamLogo(opponent?.name || "")}
+                            alt={opponent?.name}
+                            className="w-8 h-8 object-contain"
+                            onError={(e) => {
+                              const img = e.target as HTMLImageElement;
+                              img.src = getTeamLogo(opponent?.name || "");
+                            }}
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">
+                              {isHome ? "vs" : "@"} {opponent?.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {f.matchDate ? new Date(f.matchDate).toLocaleDateString() : 'TBD'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`text-lg font-bold ${teamScore > oppScore ? 'text-green-600' : teamScore < oppScore ? 'text-red-600' : 'text-yellow-600'}`}>
+                            {teamScore} - {oppScore}
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
             </CardContent>
           </Card>
 
-          {/* Recent */}
+          {/* Upcoming Fixtures */}
           <Card className="bg-elite-card border-border/50">
             <CardHeader>
-              <CardTitle className="flex items-center"><Activity className="w-5 h-5 mr-2"/>Recent Results</CardTitle>
+              <CardTitle className="flex items-center">
+                <Calendar className="w-5 h-5 mr-2" />
+                Upcoming Fixtures
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {recentResults.length === 0 ? <p className="text-sm text-muted-foreground">No recent results</p> :
-                recentResults.map(f => (
-                  <div key={f.id} className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
-                    <div className="flex items-center space-x-2">
-                      <img src={f.homeTeam?.logo ? urlFor(f.homeTeam.logo).url() : getTeamLogo(f.homeTeam?.name || "")} className="w-6 h-6" />
-                      <span>{f.homeTeam?.name} vs {f.awayTeam?.name}</span>
-                      <img src={f.awayTeam?.logo ? urlFor(f.awayTeam.logo).url() : getTeamLogo(f.awayTeam?.name || "")} className="w-6 h-6" />
-                    </div>
-                    <div className="font-bold">{f.homeScore}-{f.awayScore}</div>
-                  </div>
-                ))
-              }
+            <CardContent className="space-y-3">
+              {upcomingFixtures.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No upcoming fixtures</p>
+              ) : (
+                upcomingFixtures.map(f => {
+                  const isHome = f.homeTeam?._id === team.id;
+                  const opponent = isHome ? f.awayTeam : f.homeTeam;
+                  
+                  return (
+                    <Link key={f.id} to={`/match/${f.id}`}>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-3 flex-1">
+                          <img
+                            src={opponent?.logo ? urlFor(opponent.logo).url() : getTeamLogo(opponent?.name || "")}
+                            alt={opponent?.name}
+                            className="w-8 h-8 object-contain"
+                            onError={(e) => {
+                              const img = e.target as HTMLImageElement;
+                              img.src = getTeamLogo(opponent?.name || "");
+                            }}
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">
+                              {isHome ? "vs" : "@"} {opponent?.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {f.matchDate 
+                                ? new Date(f.matchDate).toLocaleDateString() + ' ' + new Date(f.matchDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                : 'TBD'}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {f.status?.toUpperCase() || 'SCHEDULED'}
+                        </Badge>
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
             </CardContent>
           </Card>
 
